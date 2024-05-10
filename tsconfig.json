@@ -1,0 +1,18 @@
+{
+	"compilerOptions": {
+		"declaration": true,
+		"outDir": "./dist",
+		"target": "ES2022",
+		"module": "ES2022",
+		"strict": true,
+		"jsx": "preserve",
+		"moduleResolution": "node",
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"forceConsistentCasingInFileNames": true,
+		"resolveJsonModule": true,
+		"strictPropertyInitialization": false
+	},
+	"include": ["src/**/*.ts", "typesGenerator.ts"],
+	"exclude": ["src/**/*.test.ts"]
+}

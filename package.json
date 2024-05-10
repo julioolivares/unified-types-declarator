@@ -1,0 +1,44 @@
+{
+	"name": "unified-types-generator",
+	"version": "1.0.0",
+	"private": false,
+	"description": "A tool for generating unified TypeScript type declarations from various project files based on tsconfig settings.",
+	"main": "./dist/bundle.cjs.js",
+	"module": "./dist/bundle.esm.js",
+	"types": "dist/index.d.ts",
+	"scripts": {
+		"build": "tsc && rollup -c",
+		"generate-types": "ts-node ./src/UnifiedTypesGenerator.ts",
+		"prepublishOnly": "npm run build",
+		"test": "echo 'Tests are pending'"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/your-username/unified-types-generator.git"
+	},
+	"keywords": [
+		"typescript",
+		"types",
+		"generator",
+		"tsconfig",
+		"declarations"
+	],
+	"author": "Julio Tejeda <julioolivarestejeda@gmail.com>",
+	"license": "MIT",
+	"dependencies": {
+		"typescript": "^5.4.5",
+		"tslib": "^2.6.2"
+	},
+	"devDependencies": {
+		"@types/node": "^20.12.11",
+		"ts-node": "^10.9.2",
+		"rollup": "^4.17.2",
+		"@rollup/plugin-typescript": "^11.1.6",
+		"@types/chai": "^4.3.16",
+		"@types/mocha": "^10.0.6",
+		"chai": "^5.1.0",
+		"mocha": "^10.2.0",
+		"nyc": "^15.1.0",
+		"prettier": "^3.1.1"
+	}
+}

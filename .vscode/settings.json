@@ -1,0 +1,43 @@
+{
+	"html.format.indentHandlebars": true,
+	"html.format.indentInnerHtml": true,
+	"workbench.sideBar.location": "left",
+	"git.enableSmartCommit": true,
+	"git.autofetch": true,
+	"explorer.confirmDelete": false,
+	"eslint.codeAction.showDocumentation": {
+		"enable": true
+	},
+	"javascript.updateImportsOnFileMove.enabled": "always",
+	"workbench.colorTheme": "Visual Studio Dark",
+	"workbench.iconTheme": "material-icon-theme",
+	"git.confirmSync": false,
+	"debug.onTaskErrors": "debugAnyway",
+	"typescript.updateImportsOnFileMove.enabled": "always",
+	"explorer.confirmDragAndDrop": false,
+	"search.exclude": {
+		"dist/": true
+	},
+	"terminal.integrated.defaultProfile.windows": "Git Bash",
+	"editor.suggestSelection": "first",
+	"files.exclude": {},
+	"editor.codeActionsOnSave": {
+		"source.fixAll.eslint": "always",
+		"source.fixAll": "always"
+	},
+	"editor.defaultFormatter": "esbenp.prettier-vscode",
+	"eslint.codeActionsOnSave.mode": "all",
+	"eslint.format.enable": true,
+	"editor.formatOnSave": true,
+	"editor.unicodeHighlight.ambiguousCharacters": false,
+	"terminal.integrated.defaultProfile.linux": "bash",
+	"editor.tabSize": 2,
+	"editor.indentSize": "tabSize",
+	"editor.autoIndent": "brackets",
+	"typescript.format.semicolons": "remove",
+	"javascript.format.semicolons": "remove",
+	"cSpell.language": "en,es,es-ES",
+	"cSpell.caseSensitive": true,
+	"cSpell.dictionaries": ["es", "en"],
+	"conventionalCommits.scopes": ["backend"]
+}

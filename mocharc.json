@@ -1,0 +1,17 @@
+
+{
+  "diff": true,
+  "extension": [".test.ts"],
+  "package": "./package.json",
+  "reporter": "spec",
+  "slow": "150",
+  "timeout": "3000",
+  "ui": "bdd",
+  "watch-files": ["src/**/*.test.ts"],
+  "ignore": ["node_modules/*"],
+  "recursive": true, 
+  "watch": false, 
+  "exit": true, 
+  "spec": ["src/**/*.test.ts"],
+  "exclude": ["src/node_modules/**/*"]
+}
