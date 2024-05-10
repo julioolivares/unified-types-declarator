@@ -9,6 +9,9 @@ Thumbs.db
 *.exe
 *.war
 
+# dist 
+dist/
+
 # Large media files
 *.mp4
 *.tiff
