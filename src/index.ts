@@ -217,6 +217,13 @@ class UnifiedTypesGenerator {
 	private generateTypeInterface(node: InterfaceDeclaration, sourceFile: SourceFile): string {
 		let declarations = ''
 		let membersInfo = ''
+		let genericTypes = ''
+
+		if (node.typeParameters) {
+			node.typeParameters.forEach((param) => {
+				genericTypes += !genericTypes ? param.name.text : `, ${param.name.text}`
+			})
+		}
 
 		node.members.forEach((member) => {
 			if (ts.isPropertySignature(member) && member.name) {
@@ -231,7 +238,9 @@ class UnifiedTypesGenerator {
 			}
 		})
 
-		declarations += `declare interface ${node.name.text} {\n${membersInfo}}\n`
+		if (genericTypes) genericTypes = `<${genericTypes}>`
+
+		declarations += `declare interface ${node.name.text} ${genericTypes} {\n${membersInfo}}\n`
 		return declarations
 	}
 
@@ -246,8 +255,15 @@ class UnifiedTypesGenerator {
 	private generateTypeClase(node: ClassDeclaration, sourceFile: SourceFile): string {
 		let declarations = ''
 		let membersInfo = ''
+		let genericClass = ''
 
 		if (!node.name) return ''
+
+		if (node.typeParameters) {
+			node.typeParameters.forEach((param) => {
+				genericClass += genericClass ? `, ${param.name.text}` : param.name.text
+			})
+		}
 
 		node.members.forEach((member) => {
 			if (ts.isPropertyDeclaration(member) && member.name) {
@@ -255,6 +271,14 @@ class UnifiedTypesGenerator {
 				const propertyType = member.type ? member.type.getText(sourceFile) : 'unknown'
 				membersInfo += `    ${propertyName}: ${propertyType};\n`
 			} else if (ts.isMethodDeclaration(member) && member.name) {
+				let genericTypes = ''
+
+				if (member.typeParameters) {
+					member.typeParameters.forEach((param) => {
+						genericTypes += genericTypes ? `, ${param.name.text}` : param.name.text
+					})
+				}
+
 				const methodName = member.name.getText(sourceFile)
 				const methodSignature = member.type ? member.type.getText(sourceFile) : 'unknown'
 
@@ -266,9 +290,18 @@ class UnifiedTypesGenerator {
 					parameters += `${paramName}: ${paramType}`
 				})
 
-				membersInfo += `  ${methodName}(${parameters}): ${methodSignature};\n`
+				genericTypes = genericTypes ? `<${genericTypes}>` : ''
+
+				membersInfo += `  ${methodName}${genericTypes}(${parameters}): ${methodSignature};\n`
 			} else if (ts.isConstructorDeclaration(member)) {
 				let parameters = ''
+				let genericTypes = ''
+
+				if (member.typeParameters) {
+					member.typeParameters.forEach((param) => {
+						genericTypes += genericTypes ? `, ${param.name.text}` : param.name.text
+					})
+				}
 
 				member.parameters.forEach((param) => {
 					const paramName = param.name.getText(sourceFile)
@@ -276,9 +309,13 @@ class UnifiedTypesGenerator {
 					parameters += `${paramName}: ${paramType}`
 				})
 
-				membersInfo += `  constructor(${parameters});\n`
+				genericTypes = genericTypes ? `<${genericTypes}>` : ''
+
+				membersInfo += `  constructor${genericTypes}(${parameters});\n`
 			}
 		})
+
+		genericClass = genericClass ? `${genericClass}` : ''
 
 		declarations += `declare class ${node.name.text} {\n${membersInfo}}\n`
 		return declarations
