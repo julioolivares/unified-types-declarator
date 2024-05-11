@@ -4,23 +4,23 @@
 
 The Unified Type Generator is a utility designed for generating global TypeScript type declarations from project files. This tool automates the creation of detailed type definitions, ensuring consistency and accuracy across large TypeScript projects. It's particularly useful for applications with complex or frequently changing data models, as it helps maintain type safety and improve developer productivity by reducing manual type declaration overhead.
 
-## Why Unified Type Generator?
+## Motivation
 
-This tool was created to address the need for a streamlined process of managing and generating type declarations in TypeScript projects. It supports maintaining a single source of truth for type definitions, which is crucial for large-scale projects where consistency in type usage is critical.
+The Unified Type Generator was developed to address the complexities associated with managing TypeScript type declarations, especially in large-scale projects or those organized as monorepos. In environments where multiple packages coexist within a single repository, maintaining a single source of truth for type definitions is crucial. This tool facilitates the integration and reuse of types across different parts of a project, streamlining development and enhancing maintainability.
 
 ## Features
 
-- Generate global TypeScript type declarations automatically.
-- Configurable through standard tsconfig.json files.
-- Supports Enums, Interfaces, and Classes.
-- Easy integration into existing TypeScript projects.
+- **Automatic Generation:** Creates global TypeScript type declarations automatically.
+- **Configuration:** Fully configurable through standard `tsconfig.json` files.
+- **Support:** Handles Enums, Interfaces, and Classes seamlessly.
+- **Integration:** Easily integrates into existing TypeScript projects.
 
 ## Installation
 
-To install the Unified Type Generator, you can use npm:
+To install the Unified Type Generator, run the following command:
 
 ```bash
-npm install unified-types-generator
+	npm install unified-types-generator
 ```
 
 ## Usage
@@ -29,43 +29,53 @@ Here's how you can use the Unified Type Generator in your project:
 
 ### Setup Configuration:
 
-Ensure that your tsconfig.json or a custom configuration file specifies the root directory, include paths, and output file name.
+Ensure your _`tsconfig.declaration.json`_ or a custom configuration file specifies the root directory, include paths, and the output file name.
 
-### Generate Types:
+### Generating Types:
 
-Run the generator to create the type declarations:
+By default, the Unified Type Generator uses tsconfig.declaration.json to generate type declarations. To run the generator with the default configuration file, use:
 
 ```bash
-npx ut-generator
+	npx ut-generator
 
 ```
+
+If you need to specify an alternative configuration file, you can pass the path to the executable as follows:
 
 ### Integrate Generated Types:
 
 Include the generated type declaration file in your project to enhance type checking and IntelliSense across your IDE.
 
-#### Example
-
-Suppose you have a TypeScript project with several models defined across different files. You can configure the Unified Type Generator to scan these files and generate a unified type declaration file:
-
-#### Step 1: Set up your tsconfig.declaration.json to include all relevant model files.
-
-#### Step 2: Run the Unified Type Generator.
-
-#### Step 3: Use the generated type declarations in your project.
-
-Here is a simple tsconfig example that the generator could use:
-
-```json
-{
-	"compilerOptions": {
-		"outFile": "./types/global.d.ts",
-		"rootDir": "./src"
-	},
-	"include": ["./src/**/*.ts"]
-}
+```bash
+	npx ut-generator tsconfig.otherFile.json
 ```
+
+This flexibility allows you to customize the generation process based on different configurations within the same project or across projects.
+
+#### Integration
+
+After generating the type declarations, include the generated type declaration file in your project to enhance type safety and IntelliSense support across your IDE.
+
+##### Example Workflow
+
+1.  **Set up your configuration:** Adjust your tsconfig.declaration.json or another config file to include all necessary model files.
+
+2.  **Generate types:** Use the default or a specified configuration file to run the generator.
+
+3.  **Integrate the types:** Include the output file in your project for improved type checking.
+    Here is a simple tsconfig example that the generator could use:
+
+    ```json
+    {
+    	"compilerOptions": {
+    		"outFile": "./types/global.d.ts",
+    		"rootDir": "./src"
+    	},
+    	"include": ["./src/**/*.ts"],
+    	"exclude": ["src/**/*.test.ts"]
+    }
+    ```
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE.md file for details. The MIT License is a permissive license that is short and to the point. It lets people do almost anything they want with your project, like making and distributing closed source versions.
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details. The MIT License is a permissive license that is short and to the point. It lets people do almost anything they want with your project, like making and distributing closed source versions.
