@@ -30,11 +30,13 @@
 		"tag": "1.0.5"
 	},
 	"keywords": [
-		"typescript",
+		"unified",
 		"types",
 		"generator",
+		"typescript",
 		"tsconfig",
-		"declarations"
+		"declarations",
+		"unified types generator"
 	],
 	"author": "Julio Tejeda <julioolivarestejeda@gmail.com>",
 	"license": "MIT",
