@@ -6,6 +6,11 @@
 	"main": "./dist/bundle.cjs.js",
 	"module": "./dist/bundle.esm.js",
 	"types": "dist/index.d.ts",
+	"files": [
+		"dist/",
+		"src/",
+		"package.json"
+	],
 	"scripts": {
 		"build": "tsc && rollup -c",
 		"generate-types": "ts-node ./src/UnifiedTypesGenerator.ts",
