@@ -20,7 +20,9 @@ The Unified Type Generator was developed to address the complexities associated 
 To install the Unified Type Generator, run the following command:
 
 ```bash
-	npm install unified-types-generator
+npm install unified-types-generator
+# or globally
+npm install -g unified-types-generator
 ```
 
 ## Usage
@@ -29,15 +31,14 @@ Here's how you can use the Unified Type Generator in your project:
 
 ### Setup Configuration:
 
-Ensure your _`tsconfig.declaration.json`_ or a custom configuration file specifies the root directory, include paths, and the output file name.
+Ensure your **`tsconfig.declaration.json`** or a **custom configuration file** specifies the root directory, include paths, and the output file name.
 
 ### Generating Types:
 
 By default, the Unified Type Generator uses tsconfig.declaration.json to generate type declarations. To run the generator with the default configuration file, use:
 
 ```bash
-	npx ut-generator
-
+npx ut-generator
 ```
 
 If you need to specify an alternative configuration file, you can pass the path to the executable as follows:
@@ -47,7 +48,7 @@ If you need to specify an alternative configuration file, you can pass the path 
 Include the generated type declaration file in your project to enhance type checking and IntelliSense across your IDE.
 
 ```bash
-	npx ut-generator tsconfig.otherFile.json
+npx ut-generator tsconfig.otherFile.json
 ```
 
 This flexibility allows you to customize the generation process based on different configurations within the same project or across projects.
@@ -65,16 +66,16 @@ After generating the type declarations, include the generated type declaration f
 3.  **Integrate the types:** Include the output file in your project for improved type checking.
     Here is a simple tsconfig example that the generator could use:
 
-    ```json
-    {
-    	"compilerOptions": {
-    		"outFile": "./types/global.d.ts",
-    		"rootDir": "./src"
-    	},
-    	"include": ["./src/**/*.ts"],
-    	"exclude": ["src/**/*.test.ts"]
-    }
-    ```
+```json
+{
+	"compilerOptions": {
+		"outFile": "./types/global.d.ts",
+		"rootDir": "./src"
+	},
+	"include": ["./src/**/*.ts"],
+	"exclude": ["src/**/*.test.ts"]
+}
+```
 
 ## License
 
