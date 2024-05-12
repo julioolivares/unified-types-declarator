@@ -12,7 +12,7 @@ The Unified Type Declarator was developed to address the complexities associated
 
 - **Automatic Generation:** Creates global TypeScript type declarations automatically.
 - **Configuration:** Fully configurable through standard `tsconfig.json` files.
-- **Support:** Handles Enums, Interfaces, and Classes seamlessly.
+- **Support:** Handles Enums, Interfaces, Types, Functions, and Classes seamlessly.
 - **Integration:** Easily integrates into existing TypeScript projects.
 
 ## Installation

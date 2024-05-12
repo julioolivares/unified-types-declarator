@@ -17,8 +17,9 @@ import ts, {
 	type FunctionTypeNode,
 	type PropertyDeclaration,
 	type PropertySignature,
-	MethodDeclaration,
-	ConstructorDeclaration,
+	type MethodDeclaration,
+	type ConstructorDeclaration,
+	type FunctionDeclaration,
 } from 'typescript'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -71,14 +72,19 @@ class UnifiedTypesGenerator {
 	 * @returns {string}
 	 */
 	private getParametersSignature(
-		node: MethodSignature | MethodDeclaration | ConstructorDeclaration,
+		node:
+			| MethodSignature
+			| MethodDeclaration
+			| ConstructorDeclaration
+			| FunctionDeclaration
+			| FunctionTypeNode,
 		sourceFile: SourceFile
 	): string {
 		return node.parameters
 			.map((parameter) => {
 				let name = parameter.name.getText(sourceFile)
 				const type = parameter.type ? parameter.type.getText(sourceFile) : 'unknown'
-				const optional = parameter.questionToken ? '?' : ''
+				const optional = parameter.questionToken || parameter.initializer ? '?' : ''
 				//@ts-ignore
 				if (parameter.name.elements && parameter.name.elements.length > 1) {
 					name = 'param'
@@ -97,20 +103,6 @@ class UnifiedTypesGenerator {
 		return `  ${propertyName}: ${propertyType};\n`
 	}
 
-	private getParametersSignatureType(
-		methodDeclaration: FunctionTypeNode,
-		sourceFile: SourceFile
-	): string {
-		return methodDeclaration.parameters
-			.map((parameter) => {
-				const name = parameter.name.getText(sourceFile)
-				const type = parameter.type ? parameter.type.getText(sourceFile) : 'unknown'
-				const optional = parameter.questionToken ? '?' : ''
-				return `${name}${optional}: ${type}`
-			})
-			.join(', ')
-	}
-
 	/**
 	 * @async
 	 * @method generateNamespaceFromFile
@@ -118,7 +110,7 @@ class UnifiedTypesGenerator {
 	 * @param {string} filePath - The file path to generate declarations from.
 	 * @returns {Promise<string|null>}
 	 */
-	private async generateNamespaceFromFile(filePath: string): Promise<string | null> {
+	private async generateTypeDeclarationFromFile(filePath: string): Promise<string | null> {
 		const program = ts.createProgram([filePath], this.tsConfigOptions.compilerOptions)
 		const sourceFile = program.getSourceFile(filePath)
 
@@ -130,15 +122,29 @@ class UnifiedTypesGenerator {
 		let declarations = ''
 
 		ts.forEachChild(sourceFile, (node) => {
+			// Enums
 			if (ts.isEnumDeclaration(node) && node.name) {
 				declarations += this.generateTypeEnumeration(node, sourceFile)
-			} else if (ts.isClassDeclaration(node) && node.name) {
+			}
+			// Classes
+			else if (ts.isClassDeclaration(node) && node.name) {
 				declarations += this.generateTypeClass(node, sourceFile)
-			} else if (ts.isInterfaceDeclaration(node) && node.name) {
+			}
+			// Interfaces
+			else if (ts.isInterfaceDeclaration(node) && node.name) {
 				declarations += this.generateTypeInterface(node, sourceFile)
-			} else if (ts.isTypeAliasDeclaration(node) && node.name) {
+			}
+			// Types
+			else if (ts.isTypeAliasDeclaration(node) && node.name) {
 				declarations += this.generateTypeType(node, sourceFile)
-			} else if (ts.isFunctionDeclaration(node) && node.name) {
+			}
+			// Functions
+			else if (ts.isFunctionDeclaration(node) && node.name) {
+				declarations += this.generateTypeFunction(node, sourceFile)
+			}
+			// Methods
+			else if (ts.isMethodDeclaration(node) && node.name) {
+				declarations += this.generateMethodType(node, sourceFile)
 			}
 		})
 
@@ -205,12 +211,12 @@ class UnifiedTypesGenerator {
 			const filePath = path.join(this.tsConfigOptions.compilerOptions.rootDir as string, file)
 			console.log(styleText('greenBright', `Generating types for: \n ${filePath} `))
 
-			const data = await this.generateNamespaceFromFile(filePath)
+			const data = await this.generateTypeDeclarationFromFile(filePath)
 
 			if (data) outputContent += data + '\n'
 		}
 
-		const globalDeclaration = `${outputContent} \n`
+		const globalDeclaration = `${outputContent}`
 		const outputFile = path.resolve(
 			this.cwd,
 			this.tsConfigOptions.compilerOptions.outFile as string
@@ -296,7 +302,7 @@ class UnifiedTypesGenerator {
 		if (node.type && ts.isFunctionTypeNode(node.type)) {
 			const returnTypeDeclaration = node.type.type
 
-			parametersDeclaration = this.getParametersSignatureType(node.type, sourceFile)
+			parametersDeclaration = this.getParametersSignature(node.type, sourceFile)
 
 			if (parametersDeclaration) declaration += `(${parametersDeclaration})`
 
@@ -342,8 +348,40 @@ class UnifiedTypesGenerator {
 		declaration = `${declaration}${membersInfo}\n\n`
 		return declaration
 	}
-	// TODO  implementation
-	private generateTypeFunction(node: TypeAliasDeclaration, sourceFile: SourceFile) {}
+
+	private generateTypeFunction(node: FunctionDeclaration, sourceFile: SourceFile): string {
+		let declaration = ''
+		let functionName = ''
+		let parameters = ''
+		let returnType = ''
+
+		if (!node.name?.text) return ''
+
+		functionName = node.name?.text
+		parameters = this.getParametersSignature(node, sourceFile)
+		returnType = node.type ? node.type?.getText(sourceFile) : 'unknown'
+
+		declaration = `declare function ${functionName}(${parameters}):${returnType}`
+
+		return declaration
+	}
+
+	private generateMethodType(node: MethodDeclaration, sourceFile: SourceFile): string {
+		let declaration = ''
+		let genericTypes = this.getGenerics(node)
+		const methodSignature = node.type ? node.type.getText(sourceFile) : 'unknown'
+		const parameters = this.getParametersSignature(node, sourceFile)
+
+		if (!node.name) return ''
+
+		const methodName = node.name.getText(sourceFile)
+
+		genericTypes = genericTypes ? `<${genericTypes}>` : ''
+
+		declaration = `${methodName}${genericTypes}(${parameters}): ${methodSignature};\n`
+
+		return declaration
+	}
 
 	/**
 	 * @private
