@@ -12,6 +12,13 @@ import ts, {
 	type EnumDeclaration,
 	type InterfaceDeclaration,
 	type ClassDeclaration,
+	type TypeAliasDeclaration,
+	type MethodSignature,
+	type FunctionTypeNode,
+	type PropertyDeclaration,
+	type PropertySignature,
+	MethodDeclaration,
+	ConstructorDeclaration,
 } from 'typescript'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -59,12 +66,42 @@ class UnifiedTypesGenerator {
 	 * @private
 	 * @method getParametersSignature
 	 * @description Constructs a parameter signature string for method declarations.
-	 * @param {ts.MethodSignature} method - The TypeScript method signature.
+	 * @param {ts.MethodSignature} node - The TypeScript method signature.
 	 * @param {ts.SourceFile} sourceFile - The source file containing the method.
 	 * @returns {string}
 	 */
-	private getParametersSignature(method: ts.MethodSignature, sourceFile: ts.SourceFile): string {
-		return method.parameters
+	private getParametersSignature(
+		node: MethodSignature | MethodDeclaration | ConstructorDeclaration,
+		sourceFile: SourceFile
+	): string {
+		return node.parameters
+			.map((parameter) => {
+				let name = parameter.name.getText(sourceFile)
+				const type = parameter.type ? parameter.type.getText(sourceFile) : 'unknown'
+				const optional = parameter.questionToken ? '?' : ''
+				//@ts-ignore
+				if (parameter.name.elements && parameter.name.elements.length > 1) {
+					name = 'param'
+				}
+				return `${name}${optional}: ${type}`
+			})
+			.join(', ')
+	}
+
+	private getPropertySignature(
+		member: PropertySignature | PropertyDeclaration,
+		sourceFile: SourceFile
+	): string {
+		const propertyName = member.name.getText(sourceFile)
+		const propertyType = member.type ? member.type.getText(sourceFile) : 'unknown'
+		return `  ${propertyName}: ${propertyType};\n`
+	}
+
+	private getParametersSignatureType(
+		methodDeclaration: FunctionTypeNode,
+		sourceFile: SourceFile
+	): string {
+		return methodDeclaration.parameters
 			.map((parameter) => {
 				const name = parameter.name.getText(sourceFile)
 				const type = parameter.type ? parameter.type.getText(sourceFile) : 'unknown'
@@ -96,9 +133,12 @@ class UnifiedTypesGenerator {
 			if (ts.isEnumDeclaration(node) && node.name) {
 				declarations += this.generateTypeEnumeration(node, sourceFile)
 			} else if (ts.isClassDeclaration(node) && node.name) {
-				declarations += this.generateTypeClase(node, sourceFile)
+				declarations += this.generateTypeClass(node, sourceFile)
 			} else if (ts.isInterfaceDeclaration(node) && node.name) {
 				declarations += this.generateTypeInterface(node, sourceFile)
+			} else if (ts.isTypeAliasDeclaration(node) && node.name) {
+				declarations += this.generateTypeType(node, sourceFile)
+			} else if (ts.isFunctionDeclaration(node) && node.name) {
 			}
 		})
 
@@ -217,19 +257,11 @@ class UnifiedTypesGenerator {
 	private generateTypeInterface(node: InterfaceDeclaration, sourceFile: SourceFile): string {
 		let declarations = ''
 		let membersInfo = ''
-		let genericTypes = ''
-
-		if (node.typeParameters) {
-			node.typeParameters.forEach((param) => {
-				genericTypes += !genericTypes ? param.name.text : `, ${param.name.text}`
-			})
-		}
+		let genericTypes = this.getGenerics(node)
 
 		node.members.forEach((member) => {
 			if (ts.isPropertySignature(member) && member.name) {
-				const propertyName = member.name.getText(sourceFile)
-				const propertyType = member.type ? member.type.getText(sourceFile) : 'unknown'
-				membersInfo += `  ${propertyName}: ${propertyType};\n`
+				membersInfo += this.getPropertySignature(member, sourceFile)
 			} else if (ts.isMethodSignature(member) && member.name) {
 				const methodName = member.name.getText(sourceFile)
 				const parameters = this.getParametersSignature(member, sourceFile)
@@ -246,55 +278,104 @@ class UnifiedTypesGenerator {
 
 	/**
 	 * @private
-	 * @method generateTypeClase
+	 * @method generateTypeInterface
+	 * @description Generates TypeScript type declarations from an type definition.
+	 * @param {TypeAliasDeclaration} node - The TypeScript type declaration.
+	 * @param {SourceFile} sourceFile - The source file containing the type declaration.
+	 * @returns {string} The generated TypeScript type declaration.
+	 */
+	private generateTypeType(node: TypeAliasDeclaration, sourceFile: SourceFile): string {
+		let parametersDeclaration = ''
+		let membersInfo = ''
+		let generic = this.getGenerics(node)
+
+		generic = generic ? `<${generic}>` : ''
+		let declaration = `declare type ${node.name.text}${generic} = `
+
+		// Function type
+		if (node.type && ts.isFunctionTypeNode(node.type)) {
+			const returnTypeDeclaration = node.type.type
+
+			parametersDeclaration = this.getParametersSignatureType(node.type, sourceFile)
+
+			if (parametersDeclaration) declaration += `(${parametersDeclaration})`
+
+			if (ts.isTypeLiteralNode(returnTypeDeclaration)) {
+				returnTypeDeclaration.members.forEach((member) => {
+					// Method
+					if (ts.isMethodSignature(member)) {
+						const methodName = member.name.getText(sourceFile)
+						const parameters = this.getParametersSignature(member, sourceFile)
+						const returnType = member.type ? member.type.getText(sourceFile) : 'unknown'
+						membersInfo += `${methodName}: (${parameters}) => ${returnType}`
+					}
+					//Property
+					else if (ts.isPropertySignature(member)) {
+						membersInfo += this.getPropertySignature(member, sourceFile)
+					}
+				})
+
+				membersInfo = ` => {\n${membersInfo}}`
+			}
+		}
+		// Type Literal
+		else if (node.type && ts.isTypeLiteralNode(node.type)) {
+			node.type.members.forEach((member) => {
+				// Method
+				if (ts.isMethodSignature(member)) {
+					const methodName = member.name.getText(sourceFile)
+					const parameters = this.getParametersSignature(member, sourceFile)
+					const returnType = member.type ? member.type.getText(sourceFile) : 'unknown'
+					membersInfo += `${methodName}: (${parameters}) => ${returnType}`
+				}
+				//Property
+				else if (ts.isPropertySignature(member)) {
+					membersInfo += this.getPropertySignature(member, sourceFile)
+				}
+			})
+
+			membersInfo = `{\n${membersInfo}}`
+		} else {
+			membersInfo = `${node.type.getText(sourceFile)}`
+		}
+
+		declaration = `${declaration}${membersInfo}\n\n`
+		return declaration
+	}
+	// TODO  implementation
+	private generateTypeFunction(node: TypeAliasDeclaration, sourceFile: SourceFile) {}
+
+	/**
+	 * @private
+	 * @method generateTypeClass
 	 * @description Generates TypeScript class type declarations from a class node.
 	 * @param {ClassDeclaration} node - The TypeScript class declaration.
 	 * @param {SourceFile} sourceFile - The source file containing the class declaration.
 	 * @returns {string} The generated TypeScript class declaration.
 	 */
-	private generateTypeClase(node: ClassDeclaration, sourceFile: SourceFile): string {
+	private generateTypeClass(node: ClassDeclaration, sourceFile: SourceFile): string {
 		let declarations = ''
 		let membersInfo = ''
-		let genericClass = ''
+		let genericClass = this.getGenerics(node)
 
 		if (!node.name) return ''
 
-		if (node.typeParameters) {
-			node.typeParameters.forEach((param) => {
-				genericClass += genericClass ? `, ${param.name.text}` : param.name.text
-			})
-		}
-
 		node.members.forEach((member) => {
 			if (ts.isPropertyDeclaration(member) && member.name) {
-				const propertyName = member.name.getText(sourceFile)
-				const propertyType = member.type ? member.type.getText(sourceFile) : 'unknown'
-				membersInfo += `    ${propertyName}: ${propertyType};\n`
+				membersInfo += this.getPropertySignature(member, sourceFile)
 			} else if (ts.isMethodDeclaration(member) && member.name) {
-				let genericTypes = ''
-
-				if (member.typeParameters) {
-					member.typeParameters.forEach((param) => {
-						genericTypes += genericTypes ? `, ${param.name.text}` : param.name.text
-					})
-				}
+				let genericTypes = this.getGenerics(member)
 
 				const methodName = member.name.getText(sourceFile)
 				const methodSignature = member.type ? member.type.getText(sourceFile) : 'unknown'
 
-				let parameters = ''
-
-				member.parameters.forEach((param) => {
-					const paramName = param.name.getText(sourceFile)
-					const paramType = param.type ? param.type.getText(sourceFile) : 'unknown'
-					parameters += `${paramName}: ${paramType}`
-				})
+				let parameters = this.getParametersSignature(member, sourceFile)
 
 				genericTypes = genericTypes ? `<${genericTypes}>` : ''
 
 				membersInfo += `  ${methodName}${genericTypes}(${parameters}): ${methodSignature};\n`
 			} else if (ts.isConstructorDeclaration(member)) {
-				let parameters = ''
+				let parameters = this.getParametersSignature(member, sourceFile)
 				let genericTypes = ''
 
 				if (member.typeParameters) {
@@ -302,12 +383,6 @@ class UnifiedTypesGenerator {
 						genericTypes += genericTypes ? `, ${param.name.text}` : param.name.text
 					})
 				}
-
-				member.parameters.forEach((param) => {
-					const paramName = param.name.getText(sourceFile)
-					const paramType = param.type ? param.type.getText(sourceFile) : 'unknown'
-					parameters += `${paramName}: ${paramType}`
-				})
 
 				genericTypes = genericTypes ? `<${genericTypes}>` : ''
 
@@ -315,10 +390,24 @@ class UnifiedTypesGenerator {
 			}
 		})
 
-		genericClass = genericClass ? `${genericClass}` : ''
+		genericClass = genericClass ? `<${genericClass}>` : ''
 
-		declarations += `declare class ${node.name.text} {\n${membersInfo}}\n`
+		declarations += `declare class ${node.name.text}${genericClass} {\n${membersInfo}}\n`
 		return declarations
+	}
+
+	private getGenerics(
+		node: ClassDeclaration | InterfaceDeclaration | MethodDeclaration | TypeAliasDeclaration
+	): string {
+		let genericTypes = ''
+
+		if (node.typeParameters) {
+			node.typeParameters.forEach((param) => {
+				genericTypes += !genericTypes ? param.name.text : `, ${param.name.text}`
+			})
+		}
+
+		return genericTypes
 	}
 }
 
