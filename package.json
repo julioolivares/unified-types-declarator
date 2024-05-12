@@ -1,6 +1,6 @@
 {
 	"name": "unified-types-declarator",
-	"version": "1.0.1",
+	"version": "1.1.0",
 	"private": false,
 	"description": "A tool for generating unified TypeScript type declarations from various project files based on tsconfig settings.",
 	"main": "./dist/bundle.cjs.js",
