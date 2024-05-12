@@ -69,11 +69,11 @@ After generating the type declarations, include the generated type declaration f
 ```json
 {
 	"compilerOptions": {
-		"outFile": "./types/global.d.ts",
+		"outFile": "types/index.d.ts",
 		"rootDir": "./src"
 	},
-	"include": ["./src/**/*.ts"],
-	"exclude": ["src/**/*.test.ts"]
+	"include": ["./src/**/*.entity.ts", "./src/**/*.fixtures.ts"],
+	"exclude": ["global.d.ts"]
 }
 ```
 
