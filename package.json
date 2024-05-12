@@ -1,6 +1,6 @@
 {
-	"name": "unified-types-generator",
-	"version": "1.0.7",
+	"name": "unified-types-declarator",
+	"version": "1.0.0",
 	"private": false,
 	"description": "A tool for generating unified TypeScript type declarations from various project files based on tsconfig settings.",
 	"main": "./dist/bundle.cjs.js",
@@ -21,7 +21,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/julioolivares/unified-types-generator"
+		"url": "https://github.com/julioolivares/unified-types-declarator"
 	},
 	"publishConfig": {
 		"access": "public",
@@ -34,7 +34,8 @@
 		"typescript",
 		"tsconfig",
 		"declarations",
-		"unified types declarator"
+		"unified types declarator",
+		"unified types generator"
 	],
 	"author": "Julio Tejeda <julioolivarestejeda@gmail.com>",
 	"license": "MIT",
