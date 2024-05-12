@@ -13,12 +13,11 @@
 	],
 	"scripts": {
 		"build": "tsc && rollup -c",
-		"generate-types": "ts-node ./src/UnifiedTypesGenerator.ts",
 		"prepublishOnly": "npm run build",
 		"test": "echo 'Tests are pending'"
 	},
 	"bin": {
-		"ut-generator": "dist/ut-generator.js"
+		"ut-declarator": "dist/ut-declarator.js"
 	},
 	"repository": {
 		"type": "git",
@@ -31,11 +30,11 @@
 	"keywords": [
 		"unified",
 		"types",
-		"generator",
+		"declarator",
 		"typescript",
 		"tsconfig",
 		"declarations",
-		"unified types generator"
+		"unified types declarator"
 	],
 	"author": "Julio Tejeda <julioolivarestejeda@gmail.com>",
 	"license": "MIT",

@@ -1,12 +1,12 @@
-# Unified Type Generator
+# Unified Type Declarator
 
 ## Description
 
-The Unified Type Generator is a utility designed for generating global TypeScript type declarations from project files. This tool automates the creation of detailed type definitions, ensuring consistency and accuracy across large TypeScript projects. It's particularly useful for applications with complex or frequently changing data models, as it helps maintain type safety and improve developer productivity by reducing manual type declaration overhead.
+The Unified Type Declarator is a utility designed for generating global TypeScript type declarations from project files. This tool automates the creation of detailed type definitions, ensuring consistency and accuracy across large TypeScript projects. It's particularly useful for applications with complex or frequently changing data models, as it helps maintain type safety and improve developer productivity by reducing manual type declaration overhead.
 
 ## Motivation
 
-The Unified Type Generator was developed to address the complexities associated with managing TypeScript type declarations, especially in large-scale projects or those organized as monorepos. In environments where multiple packages coexist within a single repository, maintaining a single source of truth for type definitions is crucial. This tool facilitates the integration and reuse of types across different parts of a project, streamlining development and enhancing maintainability.
+The Unified Type Declarator was developed to address the complexities associated with managing TypeScript type declarations, especially in large-scale projects or those organized as monorepos. In environments where multiple packages coexist within a single repository, maintaining a single source of truth for type definitions is crucial. This tool facilitates the integration and reuse of types across different parts of a project, streamlining development and enhancing maintainability.
 
 ## Features
 
@@ -17,7 +17,7 @@ The Unified Type Generator was developed to address the complexities associated 
 
 ## Installation
 
-To install the Unified Type Generator, run the following command:
+To install the Unified Type Declarator, run the following command:
 
 ```bash
 npm install unified-types-generator
@@ -27,7 +27,7 @@ npm install -g unified-types-generator
 
 ## Usage
 
-Here's how you can use the Unified Type Generator in your project:
+Here's how you can use the Unified Type Declarator in your project:
 
 ### Setup Configuration:
 
@@ -35,10 +35,10 @@ Ensure your **`tsconfig.declaration.json`** or a **custom configuration file** s
 
 ### Generating Types:
 
-By default, the Unified Type Generator uses tsconfig.declaration.json to generate type declarations. To run the generator with the default configuration file, use:
+By default, the Unified Type Declarator uses tsconfig.declaration.json to generate type declarations. To run the Declarator with the default configuration file, use:
 
 ```bash
-npx ut-generator
+npx ut-declarator
 ```
 
 If you need to specify an alternative configuration file, you can pass the path to the executable as follows:
@@ -48,7 +48,7 @@ If you need to specify an alternative configuration file, you can pass the path 
 Include the generated type declaration file in your project to enhance type checking and IntelliSense across your IDE.
 
 ```bash
-npx ut-generator tsconfig.otherFile.json
+npx ut-declarator tsconfig.otherFile.json
 ```
 
 This flexibility allows you to customize the generation process based on different configurations within the same project or across projects.
@@ -61,10 +61,10 @@ After generating the type declarations, include the generated type declaration f
 
 1.  **Set up your configuration:** Adjust your tsconfig.declaration.json or another config file to include all necessary model files.
 
-2.  **Generate types:** Use the default or a specified configuration file to run the generator.
+2.  **Generate types:** Use the default or a specified configuration file to run the declarator.
 
 3.  **Integrate the types:** Include the output file in your project for improved type checking.
-    Here is a simple tsconfig example that the generator could use:
+    Here is a simple tsconfig example that the declarator could use:
 
 ```json
 {
