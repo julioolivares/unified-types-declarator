@@ -20,6 +20,11 @@ import ts, {
 	type MethodDeclaration,
 	type ConstructorDeclaration,
 	type FunctionDeclaration,
+	type ParameterDeclaration,
+	VariableDeclaration,
+	VariableStatement,
+	SyntaxKind,
+	JSDoc,
 } from 'typescript'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -85,11 +90,13 @@ class UnifiedTypesGenerator {
 				let name = parameter.name.getText(sourceFile)
 				const type = parameter.type ? parameter.type.getText(sourceFile) : 'unknown'
 				const optional = parameter.questionToken || parameter.initializer ? '?' : ''
+				let comment = this.getJsDocComment(parameter)
 				//@ts-ignore
 				if (parameter.name.elements && parameter.name.elements.length > 1) {
 					name = 'param'
 				}
-				return `${name}${optional}: ${type}`
+
+				return `${comment}${name}${optional}: ${type}`
 			})
 			.join(', ')
 	}
@@ -100,7 +107,9 @@ class UnifiedTypesGenerator {
 	): string {
 		const propertyName = member.name.getText(sourceFile)
 		const propertyType = member.type ? member.type.getText(sourceFile) : 'unknown'
-		return `  ${propertyName}: ${propertyType};\n`
+		const comment = this.getJsDocComment(member)
+
+		return `\n  ${comment}  ${propertyName}: ${propertyType}\n`
 	}
 
 	/**
@@ -111,8 +120,8 @@ class UnifiedTypesGenerator {
 	 * @returns {Promise<string|null>}
 	 */
 	private async generateTypeDeclarationFromFile(filePath: string): Promise<string | null> {
-		const program = ts.createProgram([filePath], this.tsConfigOptions.compilerOptions)
-		const sourceFile = program.getSourceFile(filePath)
+		const sourceText = ts.sys.readFile(filePath)
+		const sourceFile = ts.createSourceFile(filePath, sourceText!, ts.ScriptTarget.Latest, true)
 
 		if (!sourceFile) {
 			console.error(`Unable to retrieve source file for ${filePath}`)
@@ -121,14 +130,14 @@ class UnifiedTypesGenerator {
 
 		let declarations = ''
 
-		ts.forEachChild(sourceFile, (node) => {
+		sourceFile.forEachChild((node) => {
 			// Enums
 			if (ts.isEnumDeclaration(node) && node.name) {
 				declarations += this.generateTypeEnumeration(node, sourceFile)
 			}
 			// Classes
 			else if (ts.isClassDeclaration(node) && node.name) {
-				declarations += this.generateTypeClass(node, sourceFile)
+				declarations += this.generateClassType(node, sourceFile)
 			}
 			// Interfaces
 			else if (ts.isInterfaceDeclaration(node) && node.name) {
@@ -137,14 +146,18 @@ class UnifiedTypesGenerator {
 			// Types
 			else if (ts.isTypeAliasDeclaration(node) && node.name) {
 				declarations += this.generateTypeType(node, sourceFile)
+				// declarations += this.generateVariableDeclarationType(node)
 			}
 			// Functions
 			else if (ts.isFunctionDeclaration(node) && node.name) {
-				declarations += this.generateTypeFunction(node, sourceFile)
+				declarations += this.generateFunctionType(node, sourceFile)
 			}
 			// Methods
 			else if (ts.isMethodDeclaration(node) && node.name) {
 				declarations += this.generateMethodType(node, sourceFile)
+			} else if (ts.isVariableStatement(node)) {
+				//@ts-ignore
+				declarations += this.generateVariableDeclarationType(node)
 			}
 		})
 
@@ -248,7 +261,7 @@ class UnifiedTypesGenerator {
 			membersInfo += `  ${memberName}=${memberValue},\n`
 		})
 
-		declarations += `declare enum ${node.name.text} {\n${membersInfo}}\n`
+		declarations += `declare enum ${node.name.text} {\n${membersInfo}}\n\n`
 		return declarations
 	}
 
@@ -272,13 +285,13 @@ class UnifiedTypesGenerator {
 				const methodName = member.name.getText(sourceFile)
 				const parameters = this.getParametersSignature(member, sourceFile)
 				const returnType = member.type ? member.type.getText(sourceFile) : 'unknown'
-				membersInfo += `  ${methodName}(${parameters}): ${returnType};\n`
+				membersInfo += `  ${methodName}(${parameters}): ${returnType}\n`
 			}
 		})
 
 		if (genericTypes) genericTypes = `<${genericTypes}>`
 
-		declarations += `declare interface ${node.name.text} ${genericTypes} {\n${membersInfo}}\n`
+		declarations += `declare interface ${node.name.text} ${genericTypes} {\n${membersInfo}}\n\n`
 		return declarations
 	}
 
@@ -310,10 +323,7 @@ class UnifiedTypesGenerator {
 				returnTypeDeclaration.members.forEach((member) => {
 					// Method
 					if (ts.isMethodSignature(member)) {
-						const methodName = member.name.getText(sourceFile)
-						const parameters = this.getParametersSignature(member, sourceFile)
-						const returnType = member.type ? member.type.getText(sourceFile) : 'unknown'
-						membersInfo += `${methodName}: (${parameters}) => ${returnType}`
+						membersInfo += this.generateMethodType(member, sourceFile)
 					}
 					//Property
 					else if (ts.isPropertySignature(member)) {
@@ -332,7 +342,7 @@ class UnifiedTypesGenerator {
 					const methodName = member.name.getText(sourceFile)
 					const parameters = this.getParametersSignature(member, sourceFile)
 					const returnType = member.type ? member.type.getText(sourceFile) : 'unknown'
-					membersInfo += `${methodName}: (${parameters}) => ${returnType}`
+					membersInfo += `  ${methodName}: (${parameters}) => ${returnType}`
 				}
 				//Property
 				else if (ts.isPropertySignature(member)) {
@@ -349,7 +359,21 @@ class UnifiedTypesGenerator {
 		return declaration
 	}
 
-	private generateTypeFunction(node: FunctionDeclaration, sourceFile: SourceFile): string {
+	private generateVariableDeclarationType(node: VariableStatement): string {
+		let declarationReturn = 'declare const '
+		let comment = this.getJsDocComment(node)
+		if (!node.modifiers || node.modifiers[0].kind !== SyntaxKind.DeclareKeyword) return ''
+
+		node.declarationList.declarations.forEach((declaration) => {
+			if (ts.isIdentifier(declaration.name)) {
+				declarationReturn += declaration.getText()
+			}
+		})
+
+		return `${comment}${declarationReturn}\n\n`
+	}
+
+	private generateFunctionType(node: FunctionDeclaration, sourceFile: SourceFile): string {
 		let declaration = ''
 		let functionName = ''
 		let parameters = ''
@@ -361,16 +385,20 @@ class UnifiedTypesGenerator {
 		parameters = this.getParametersSignature(node, sourceFile)
 		returnType = node.type ? node.type?.getText(sourceFile) : 'unknown'
 
-		declaration = `declare function ${functionName}(${parameters}):${returnType}`
+		declaration = `declare function ${functionName}(${parameters}):${returnType}\n\n`
 
 		return declaration
 	}
 
-	private generateMethodType(node: MethodDeclaration, sourceFile: SourceFile): string {
+	private generateMethodType(
+		node: MethodDeclaration | MethodSignature,
+		sourceFile: SourceFile
+	): string {
 		let declaration = ''
 		let genericTypes = this.getGenerics(node)
 		const methodSignature = node.type ? node.type.getText(sourceFile) : 'unknown'
 		const parameters = this.getParametersSignature(node, sourceFile)
+		const comment = this.getJsDocComment(node)
 
 		if (!node.name) return ''
 
@@ -378,20 +406,20 @@ class UnifiedTypesGenerator {
 
 		genericTypes = genericTypes ? `<${genericTypes}>` : ''
 
-		declaration = `${methodName}${genericTypes}(${parameters}): ${methodSignature};\n`
+		declaration = `  ${comment}${methodName}${genericTypes}(${parameters}): ${methodSignature}\n`
 
 		return declaration
 	}
 
 	/**
 	 * @private
-	 * @method generateTypeClass
+	 * @method generateClassType
 	 * @description Generates TypeScript class type declarations from a class node.
 	 * @param {ClassDeclaration} node - The TypeScript class declaration.
 	 * @param {SourceFile} sourceFile - The source file containing the class declaration.
 	 * @returns {string} The generated TypeScript class declaration.
 	 */
-	private generateTypeClass(node: ClassDeclaration, sourceFile: SourceFile): string {
+	private generateClassType(node: ClassDeclaration, sourceFile: SourceFile): string {
 		let declarations = ''
 		let membersInfo = ''
 		let genericClass = this.getGenerics(node)
@@ -402,19 +430,11 @@ class UnifiedTypesGenerator {
 			if (ts.isPropertyDeclaration(member) && member.name) {
 				membersInfo += this.getPropertySignature(member, sourceFile)
 			} else if (ts.isMethodDeclaration(member) && member.name) {
-				let genericTypes = this.getGenerics(member)
-
-				const methodName = member.name.getText(sourceFile)
-				const methodSignature = member.type ? member.type.getText(sourceFile) : 'unknown'
-
-				let parameters = this.getParametersSignature(member, sourceFile)
-
-				genericTypes = genericTypes ? `<${genericTypes}>` : ''
-
-				membersInfo += `  ${methodName}${genericTypes}(${parameters}): ${methodSignature};\n`
+				membersInfo += this.generateMethodType(member, sourceFile)
 			} else if (ts.isConstructorDeclaration(member)) {
 				let parameters = this.getParametersSignature(member, sourceFile)
 				let genericTypes = ''
+				const comment = this.getJsDocComment(member)
 
 				if (member.typeParameters) {
 					member.typeParameters.forEach((param) => {
@@ -424,18 +444,23 @@ class UnifiedTypesGenerator {
 
 				genericTypes = genericTypes ? `<${genericTypes}>` : ''
 
-				membersInfo += `  constructor${genericTypes}(${parameters});\n`
+				membersInfo += `  ${comment}constructor${genericTypes}(${parameters})\n`
 			}
 		})
 
 		genericClass = genericClass ? `<${genericClass}>` : ''
 
-		declarations += `declare class ${node.name.text}${genericClass} {\n${membersInfo}}\n`
+		declarations += `declare class ${node.name.text}${genericClass} {\n\n${membersInfo}}\n`
 		return declarations
 	}
 
 	private getGenerics(
-		node: ClassDeclaration | InterfaceDeclaration | MethodDeclaration | TypeAliasDeclaration
+		node:
+			| ClassDeclaration
+			| InterfaceDeclaration
+			| MethodDeclaration
+			| TypeAliasDeclaration
+			| MethodSignature
 	): string {
 		let genericTypes = ''
 
@@ -446,6 +471,33 @@ class UnifiedTypesGenerator {
 		}
 
 		return genericTypes
+	}
+
+	/**
+	 *
+	 * @param member
+	 * @returns
+	 */
+	private getJsDocComment(
+		member:
+			| MethodDeclaration
+			| ConstructorDeclaration
+			| PropertyDeclaration
+			| PropertySignature
+			| ParameterDeclaration
+			| MethodSignature
+			| VariableStatement
+			| ts.Node
+	): string {
+		let comment = ''
+		//@ts-ignore
+		const jsDocs: JSDoc[] = member.jsDoc ? (member.jsDoc as JSDoc[]) : []
+
+		for (const jsDoc of jsDocs) {
+			comment += jsDoc.getFullText()
+		}
+
+		return comment ? `${comment}\n` : ''
 	}
 }
 

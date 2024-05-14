@@ -1,6 +1,6 @@
 {
 	"name": "unified-types-declarator",
-	"version": "1.1.0",
+	"version": "1.2.1",
 	"private": false,
 	"description": "A tool for generating unified TypeScript type declarations from various project files based on tsconfig settings.",
 	"main": "./dist/bundle.cjs.js",
@@ -28,20 +28,22 @@
 		"registry": "https://registry.npmjs.org/"
 	},
 	"keywords": [
+		"autogenerate",
 		"unified",
 		"types",
 		"declarator",
 		"typescript",
 		"tsconfig",
-		"declarations",
-		"unified types declarator",
-		"unified types generator"
+		"declarations"
 	],
 	"author": "Julio Tejeda <julioolivarestejeda@gmail.com>",
 	"license": "MIT",
 	"dependencies": {
 		"typescript": "5.4.5",
 		"tslib": "2.6.2"
+	},
+	"engines": {
+		"node": ">=20.13.0"
 	},
 	"devDependencies": {
 		"@types/node": "20.12.11",
