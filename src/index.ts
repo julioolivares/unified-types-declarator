@@ -24,6 +24,7 @@ import ts, {
 	VariableDeclaration,
 	VariableStatement,
 	SyntaxKind,
+	JSDoc,
 } from 'typescript'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -108,7 +109,7 @@ class UnifiedTypesGenerator {
 		const propertyType = member.type ? member.type.getText(sourceFile) : 'unknown'
 		const comment = this.getJsDocComment(member)
 
-		return `  ${comment}${propertyName}: ${propertyType}\n`
+		return `\n  ${comment}  ${propertyName}: ${propertyType}\n`
 	}
 
 	/**
@@ -260,7 +261,7 @@ class UnifiedTypesGenerator {
 			membersInfo += `  ${memberName}=${memberValue},\n`
 		})
 
-		declarations += `declare enum ${node.name.text} {\n${membersInfo}}\n`
+		declarations += `declare enum ${node.name.text} {\n${membersInfo}}\n\n`
 		return declarations
 	}
 
@@ -290,7 +291,7 @@ class UnifiedTypesGenerator {
 
 		if (genericTypes) genericTypes = `<${genericTypes}>`
 
-		declarations += `declare interface ${node.name.text} ${genericTypes} {\n${membersInfo}}\n`
+		declarations += `declare interface ${node.name.text} ${genericTypes} {\n${membersInfo}}\n\n`
 		return declarations
 	}
 
@@ -369,7 +370,7 @@ class UnifiedTypesGenerator {
 			}
 		})
 
-		return `${comment}${declarationReturn}\n`
+		return `${comment}${declarationReturn}\n\n`
 	}
 
 	private generateFunctionType(node: FunctionDeclaration, sourceFile: SourceFile): string {
@@ -384,7 +385,7 @@ class UnifiedTypesGenerator {
 		parameters = this.getParametersSignature(node, sourceFile)
 		returnType = node.type ? node.type?.getText(sourceFile) : 'unknown'
 
-		declaration = `declare function ${functionName}(${parameters}):${returnType}`
+		declaration = `declare function ${functionName}(${parameters}):${returnType}\n\n`
 
 		return declaration
 	}
@@ -449,7 +450,7 @@ class UnifiedTypesGenerator {
 
 		genericClass = genericClass ? `<${genericClass}>` : ''
 
-		declarations += `declare class ${node.name.text}${genericClass} {\n${membersInfo}}\n`
+		declarations += `declare class ${node.name.text}${genericClass} {\n\n${membersInfo}}\n`
 		return declarations
 	}
 
@@ -486,21 +487,17 @@ class UnifiedTypesGenerator {
 			| ParameterDeclaration
 			| MethodSignature
 			| VariableStatement
+			| ts.Node
 	): string {
-		const jsDocTags = ts.getJSDocTags(member)
-		const listComment = jsDocTags.filter((tag) => tag.comment)
+		let comment = ''
+		//@ts-ignore
+		const jsDocs: JSDoc[] = member.jsDoc ? (member.jsDoc as JSDoc[]) : []
 
-		const beginComment = `\n/**\n *`
-		const endComment = `\n */\n`
-		let commentBody = ''
-
-		for (const comment of listComment) {
-			const tagName = comment.tagName && comment.tagName.text ? `@${comment.tagName.text}` : ''
-
-			commentBody += `\n * ${tagName} ${comment.comment}`
+		for (const jsDoc of jsDocs) {
+			comment += jsDoc.getFullText()
 		}
 
-		return commentBody ? `  ${beginComment}${commentBody}${endComment}` : ''
+		return comment ? `${comment}\n` : ''
 	}
 }
 
