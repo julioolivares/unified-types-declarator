@@ -150,11 +150,11 @@ class UnifiedTypesGenerator {
 			}
 			// Functions
 			else if (ts.isFunctionDeclaration(node) && node.name) {
-				declarations += this.generateFunctionType(node, sourceFile)
+				declarations += this.generateTypeFunction(node, sourceFile)
 			}
 			// Methods
 			else if (ts.isMethodDeclaration(node) && node.name) {
-				declarations += this.generateMethodType(node, sourceFile)
+				declarations += this.generateTypeMethod(node, sourceFile)
 			} else if (ts.isVariableStatement(node)) {
 				//@ts-ignore
 				declarations += this.generateVariableDeclarationType(node)
@@ -323,7 +323,7 @@ class UnifiedTypesGenerator {
 				returnTypeDeclaration.members.forEach((member) => {
 					// Method
 					if (ts.isMethodSignature(member)) {
-						membersInfo += this.generateMethodType(member, sourceFile)
+						membersInfo += this.generateTypeMethod(member, sourceFile)
 					}
 					//Property
 					else if (ts.isPropertySignature(member)) {
@@ -373,7 +373,7 @@ class UnifiedTypesGenerator {
 		return `${comment}${declarationReturn}\n\n`
 	}
 
-	private generateFunctionType(node: FunctionDeclaration, sourceFile: SourceFile): string {
+	private generateTypeFunction(node: FunctionDeclaration, sourceFile: SourceFile): string {
 		let declaration = ''
 		let functionName = ''
 		let parameters = ''
@@ -383,20 +383,20 @@ class UnifiedTypesGenerator {
 
 		functionName = node.name?.text
 		parameters = this.getParametersSignature(node, sourceFile)
-		returnType = node.type ? node.type?.getText(sourceFile) : 'unknown'
+		returnType = node.type ? node.type?.getText(sourceFile) : 'void'
 
 		declaration = `declare function ${functionName}(${parameters}):${returnType}\n\n`
 
 		return declaration
 	}
 
-	private generateMethodType(
+	private generateTypeMethod(
 		node: MethodDeclaration | MethodSignature,
 		sourceFile: SourceFile
 	): string {
 		let declaration = ''
 		let genericTypes = this.getGenerics(node)
-		const methodSignature = node.type ? node.type.getText(sourceFile) : 'unknown'
+		const methodSignature = node.type ? node.type.getText(sourceFile) : 'void'
 		const parameters = this.getParametersSignature(node, sourceFile)
 		const comment = this.getJsDocComment(node)
 
@@ -430,7 +430,7 @@ class UnifiedTypesGenerator {
 			if (ts.isPropertyDeclaration(member) && member.name) {
 				membersInfo += this.getPropertySignature(member, sourceFile)
 			} else if (ts.isMethodDeclaration(member) && member.name) {
-				membersInfo += this.generateMethodType(member, sourceFile)
+				membersInfo += this.generateTypeMethod(member, sourceFile)
 			} else if (ts.isConstructorDeclaration(member)) {
 				let parameters = this.getParametersSignature(member, sourceFile)
 				let genericTypes = ''
