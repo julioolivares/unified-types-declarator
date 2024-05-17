@@ -195,9 +195,24 @@ class UnifiedTypesGenerator {
 	 * @description Reads and parses the TypeScript configuration file.
 	 */
 	private async setTsConfig(): Promise<void> {
-		this.tsConfigOptions = JSON.parse(
-			fs.readFileSync(this.tsConfigPath, { encoding: 'utf-8' }).toString()
-		)
+		try {
+			if (!fs.existsSync(this.tsConfigPath)) {
+				console.log(
+					styleText(
+						'yellowBright',
+						`The TypeScript config file path not found at: ${this.tsConfigPath}`
+					),
+					styleText('bold', `Pleas add ${this.tsConfigPath} and try again `)
+				)
+				throw new Error(`The TypeScript config file path not found at: ${this.tsConfigPath}`)
+			}
+
+			this.tsConfigOptions = JSON.parse(
+				fs.readFileSync(this.tsConfigPath, { encoding: 'utf-8' }).toString()
+			)
+		} catch (err) {
+			console.error(err)
+		}
 	}
 
 	/**
@@ -212,6 +227,12 @@ class UnifiedTypesGenerator {
 	public async run() {
 		console.log(styleText('white', styleText('bgGreen', 'Reading tsconfig file ....')))
 		await this.setTsConfig()
+		const outputFile = path.resolve(
+			this.cwd,
+			this.tsConfigOptions.compilerOptions.outFile as string
+		)
+
+		if (fs.existsSync(outputFile)) fs.rmSync(outputFile)
 
 		if (!this.tsConfigOptions.compilerOptions || !this.tsConfigOptions.compilerOptions.outFile)
 			throw new Error(`Expected outFile option in ${this.tsConfigPath} session compilerOptions`)
@@ -230,10 +251,7 @@ class UnifiedTypesGenerator {
 		}
 
 		const globalDeclaration = `${outputContent}`
-		const outputFile = path.resolve(
-			this.cwd,
-			this.tsConfigOptions.compilerOptions.outFile as string
-		)
+
 		fs.writeFileSync(outputFile, globalDeclaration, { encoding: 'utf-8' })
 
 		console.log(styleText('bold', styleText('greenBright', `....: \n\n\n Done!!! \n\n\n\n `)))
