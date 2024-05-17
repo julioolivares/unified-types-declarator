@@ -25,6 +25,7 @@ import ts, {
 	VariableStatement,
 	SyntaxKind,
 	JSDoc,
+	ImportDeclaration,
 } from 'typescript'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -59,6 +60,8 @@ class UnifiedTypesGenerator {
 		exclude: Array<string>
 	}
 
+	private importMap: Map<string, Set<string>>
+
 	/**
 	 * @constructor
 	 * @param {string} [tsConfigPath=defaultPathConfig] - Path to the TypeScript configuration file.
@@ -66,6 +69,7 @@ class UnifiedTypesGenerator {
 	constructor(tsConfigPath?: string) {
 		this.cwd = process.cwd()
 		this.tsConfigPath = path.resolve(this.cwd, tsConfigPath || defaultPathConfig)
+		this.importMap = new Map()
 	}
 
 	/**
@@ -150,14 +154,16 @@ class UnifiedTypesGenerator {
 			}
 			// Functions
 			else if (ts.isFunctionDeclaration(node) && node.name) {
-				declarations += this.generateFunctionType(node, sourceFile)
+				declarations += this.generateTypeFunction(node, sourceFile)
 			}
 			// Methods
 			else if (ts.isMethodDeclaration(node) && node.name) {
-				declarations += this.generateMethodType(node, sourceFile)
+				declarations += this.generateTypeMethod(node, sourceFile)
 			} else if (ts.isVariableStatement(node)) {
 				//@ts-ignore
 				declarations += this.generateVariableDeclarationType(node)
+			} else if (ts.isImportDeclaration(node)) {
+				declarations += this.generateTypeImport(node)
 			}
 		})
 
@@ -195,9 +201,24 @@ class UnifiedTypesGenerator {
 	 * @description Reads and parses the TypeScript configuration file.
 	 */
 	private async setTsConfig(): Promise<void> {
-		this.tsConfigOptions = JSON.parse(
-			fs.readFileSync(this.tsConfigPath, { encoding: 'utf-8' }).toString()
-		)
+		try {
+			if (!fs.existsSync(this.tsConfigPath)) {
+				console.log(
+					styleText(
+						'yellowBright',
+						`The TypeScript config file path not found at: ${this.tsConfigPath}`
+					),
+					styleText('bold', `Pleas add ${this.tsConfigPath} and try again `)
+				)
+				throw new Error(`The TypeScript config file path not found at: ${this.tsConfigPath}`)
+			}
+
+			this.tsConfigOptions = JSON.parse(
+				fs.readFileSync(this.tsConfigPath, { encoding: 'utf-8' }).toString()
+			)
+		} catch (err) {
+			console.error(err)
+		}
 	}
 
 	/**
@@ -212,6 +233,12 @@ class UnifiedTypesGenerator {
 	public async run() {
 		console.log(styleText('white', styleText('bgGreen', 'Reading tsconfig file ....')))
 		await this.setTsConfig()
+		const outputFile = path.resolve(
+			this.cwd,
+			this.tsConfigOptions.compilerOptions.outFile as string
+		)
+
+		if (fs.existsSync(outputFile)) fs.rmSync(outputFile)
 
 		if (!this.tsConfigOptions.compilerOptions || !this.tsConfigOptions.compilerOptions.outFile)
 			throw new Error(`Expected outFile option in ${this.tsConfigPath} session compilerOptions`)
@@ -230,10 +257,7 @@ class UnifiedTypesGenerator {
 		}
 
 		const globalDeclaration = `${outputContent}`
-		const outputFile = path.resolve(
-			this.cwd,
-			this.tsConfigOptions.compilerOptions.outFile as string
-		)
+
 		fs.writeFileSync(outputFile, globalDeclaration, { encoding: 'utf-8' })
 
 		console.log(styleText('bold', styleText('greenBright', `....: \n\n\n Done!!! \n\n\n\n `)))
@@ -323,7 +347,7 @@ class UnifiedTypesGenerator {
 				returnTypeDeclaration.members.forEach((member) => {
 					// Method
 					if (ts.isMethodSignature(member)) {
-						membersInfo += this.generateMethodType(member, sourceFile)
+						membersInfo += this.generateTypeMethod(member, sourceFile)
 					}
 					//Property
 					else if (ts.isPropertySignature(member)) {
@@ -373,7 +397,7 @@ class UnifiedTypesGenerator {
 		return `${comment}${declarationReturn}\n\n`
 	}
 
-	private generateFunctionType(node: FunctionDeclaration, sourceFile: SourceFile): string {
+	private generateTypeFunction(node: FunctionDeclaration, sourceFile: SourceFile): string {
 		let declaration = ''
 		let functionName = ''
 		let parameters = ''
@@ -383,20 +407,20 @@ class UnifiedTypesGenerator {
 
 		functionName = node.name?.text
 		parameters = this.getParametersSignature(node, sourceFile)
-		returnType = node.type ? node.type?.getText(sourceFile) : 'unknown'
+		returnType = node.type ? node.type?.getText(sourceFile) : 'void'
 
 		declaration = `declare function ${functionName}(${parameters}):${returnType}\n\n`
 
 		return declaration
 	}
 
-	private generateMethodType(
+	private generateTypeMethod(
 		node: MethodDeclaration | MethodSignature,
 		sourceFile: SourceFile
 	): string {
 		let declaration = ''
 		let genericTypes = this.getGenerics(node)
-		const methodSignature = node.type ? node.type.getText(sourceFile) : 'unknown'
+		const methodSignature = node.type ? node.type.getText(sourceFile) : 'void'
 		const parameters = this.getParametersSignature(node, sourceFile)
 		const comment = this.getJsDocComment(node)
 
@@ -430,7 +454,7 @@ class UnifiedTypesGenerator {
 			if (ts.isPropertyDeclaration(member) && member.name) {
 				membersInfo += this.getPropertySignature(member, sourceFile)
 			} else if (ts.isMethodDeclaration(member) && member.name) {
-				membersInfo += this.generateMethodType(member, sourceFile)
+				membersInfo += this.generateTypeMethod(member, sourceFile)
 			} else if (ts.isConstructorDeclaration(member)) {
 				let parameters = this.getParametersSignature(member, sourceFile)
 				let genericTypes = ''
@@ -498,6 +522,57 @@ class UnifiedTypesGenerator {
 		}
 
 		return comment ? `${comment}\n` : ''
+	}
+
+	generateTypeImport(node: ImportDeclaration): string {
+		const moduleSpecifier = node.moduleSpecifier
+		let modulePath = ts.isStringLiteral(moduleSpecifier) ? moduleSpecifier.text : null
+		let declaration = ``
+
+		if (
+			node.importClause &&
+			modulePath &&
+			!modulePath.startsWith('.') &&
+			!modulePath.startsWith('/')
+		) {
+			const { namedBindings } = node.importClause
+			if (namedBindings) {
+				if (ts.isNamedImports(namedBindings) && modulePath) {
+					if (this.importMap.has(modulePath)) {
+						declaration = ''
+
+						for (const element of namedBindings.elements) {
+							if (!this.importMap.get(modulePath)?.has(element.name.text)) {
+								this.importMap.get(modulePath)?.add(element.name.text)
+
+								if (declaration) {
+									declaration += `, ${element.name.text}`
+								} else {
+									declaration = `import { ${element.name.text}`
+								}
+								console.log(declaration)
+							}
+						}
+
+						if (declaration) declaration = `${declaration}} from '${modulePath}'\n\n`
+					} else {
+						this.importMap.set(
+							modulePath,
+							new Set(namedBindings.elements.map((element) => element.name.text))
+						)
+
+						declaration = `import {${this.importMap
+							.get(modulePath)
+							?.keys()
+							//@ts-ignore
+							?.toArray()
+							.toString()}} from '${modulePath}'\n\n`
+					}
+				}
+			}
+		}
+
+		return declaration
 	}
 }
 
