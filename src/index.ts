@@ -163,7 +163,7 @@ class UnifiedTypesGenerator {
 				//@ts-ignore
 				declarations += this.generateVariableDeclarationType(node)
 			} else if (ts.isImportDeclaration(node)) {
-				declarations += this.generateTypeImport(node)
+				// declarations += this.generateTypeImport(node)
 			}
 		})
 
