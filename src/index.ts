@@ -25,6 +25,7 @@ import ts, {
 	VariableStatement,
 	SyntaxKind,
 	JSDoc,
+	ImportDeclaration,
 } from 'typescript'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -59,6 +60,8 @@ class UnifiedTypesGenerator {
 		exclude: Array<string>
 	}
 
+	private importMap: Map<string, Set<string>>
+
 	/**
 	 * @constructor
 	 * @param {string} [tsConfigPath=defaultPathConfig] - Path to the TypeScript configuration file.
@@ -66,6 +69,7 @@ class UnifiedTypesGenerator {
 	constructor(tsConfigPath?: string) {
 		this.cwd = process.cwd()
 		this.tsConfigPath = path.resolve(this.cwd, tsConfigPath || defaultPathConfig)
+		this.importMap = new Map()
 	}
 
 	/**
@@ -158,6 +162,8 @@ class UnifiedTypesGenerator {
 			} else if (ts.isVariableStatement(node)) {
 				//@ts-ignore
 				declarations += this.generateVariableDeclarationType(node)
+			} else if (ts.isImportDeclaration(node)) {
+				declarations += this.generateTypeImport(node)
 			}
 		})
 
@@ -516,6 +522,52 @@ class UnifiedTypesGenerator {
 		}
 
 		return comment ? `${comment}\n` : ''
+	}
+
+	generateTypeImport(node: ImportDeclaration): string {
+		const moduleSpecifier = node.moduleSpecifier
+		let modulePath = ts.isStringLiteral(moduleSpecifier) ? moduleSpecifier.text : null
+		let declaration = ``
+
+		if (node.importClause && modulePath) {
+			const { namedBindings } = node.importClause
+			if (namedBindings) {
+				if (ts.isNamedImports(namedBindings) && modulePath) {
+					if (this.importMap.has(modulePath)) {
+						declaration = ''
+
+						for (const element of namedBindings.elements) {
+							if (!this.importMap.get(modulePath)?.has(element.name.text)) {
+								this.importMap.get(modulePath)?.add(element.name.text)
+
+								if (declaration) {
+									declaration += `, ${element.name.text}`
+								} else {
+									declaration = `import { ${element.name.text}`
+								}
+								console.log(declaration)
+							}
+						}
+
+						if (declaration) declaration = `${declaration}} from '${modulePath}'\n\n`
+					} else {
+						this.importMap.set(
+							modulePath,
+							new Set(namedBindings.elements.map((element) => element.name.text))
+						)
+
+						declaration = `import {${this.importMap
+							.get(modulePath)
+							?.keys()
+							//@ts-ignore
+							?.toArray()
+							.toString()}} from '${modulePath}'\n\n`
+					}
+				}
+			}
+		}
+
+		return declaration
 	}
 }
 
