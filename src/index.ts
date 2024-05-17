@@ -529,7 +529,12 @@ class UnifiedTypesGenerator {
 		let modulePath = ts.isStringLiteral(moduleSpecifier) ? moduleSpecifier.text : null
 		let declaration = ``
 
-		if (node.importClause && modulePath) {
+		if (
+			node.importClause &&
+			modulePath &&
+			!modulePath.startsWith('.') &&
+			!modulePath.startsWith('/')
+		) {
 			const { namedBindings } = node.importClause
 			if (namedBindings) {
 				if (ts.isNamedImports(namedBindings) && modulePath) {
