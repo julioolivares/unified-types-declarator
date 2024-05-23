@@ -384,17 +384,41 @@ class UnifiedTypesGenerator {
 	}
 
 	private generateVariableDeclarationType(node: VariableStatement): string {
-		let declarationReturn = 'declare const '
+		let declarationReturn = ''
 		let comment = this.getJsDocComment(node)
-		if (!node.modifiers || node.modifiers[0].kind !== SyntaxKind.DeclareKeyword) return ''
+		// Make declaration as type const
+		if (
+			node.declarationList.declarations[0] &&
+			//@ts-ignore
+			node.declarationList.declarations[0].transformFlags
+		) {
+			const textDeclaration = node.getFullText() || ''
+
+			if (
+				node.declarationList.declarations[0] &&
+				node.declarationList.declarations[0].initializer &&
+				(textDeclaration.trim().endsWith('as const') ||
+					textDeclaration.trim().endsWith('as const;'))
+			) {
+				const declarationType = node.declarationList.declarations[0].initializer
+					.getText()
+					.replaceAll(';', '')
+					.replaceAll('as const', '')
+
+				declarationReturn += `declare const ${node.declarationList.declarations[0].name.getText()}: ${declarationType} \n\n`
+			}
+		}
+
+		if (!node.modifiers || node.modifiers[0].kind !== SyntaxKind.DeclareKeyword)
+			return declarationReturn
 
 		node.declarationList.declarations.forEach((declaration) => {
 			if (ts.isIdentifier(declaration.name)) {
-				declarationReturn += declaration.getText()
+				declarationReturn += `declare const ${declaration.getText()}\n\n`
 			}
 		})
 
-		return `${comment}${declarationReturn}\n\n`
+		return `${comment}${declarationReturn}`
 	}
 
 	private generateTypeFunction(node: FunctionDeclaration, sourceFile: SourceFile): string {
