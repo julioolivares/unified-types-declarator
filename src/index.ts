@@ -177,21 +177,39 @@ class UnifiedTypesGenerator {
 	 * @returns {string[]}
 	 * @throws {Error} If the root directory is not specified in tsconfig.
 	 */
-	private getFiles(): string[] {
+	private getFiles(): Array<{ name: string; path: string }> {
 		if (!this.tsConfigOptions.compilerOptions.rootDir)
 			throw new Error(`Expected rootDir option in ${this.tsConfigPath} session compilerOptions`)
 
-		let fileNames = fs.readdirSync(path.resolve(this.tsConfigOptions.compilerOptions.rootDir), {
+		let filesEntry = fs.readdirSync(path.resolve(this.tsConfigOptions.compilerOptions.rootDir), {
 			recursive: true,
+			encoding: 'utf-8',
+			withFileTypes: true,
+		})
+		const files: Array<{ name: string; path: string }> = []
+
+		const patternsToInclude: string[] = this.tsConfigOptions.include.map((includePath) => {
+			return includePath.split('*.').at(-1)
 		}) as string[]
 
-		const patterns = this.tsConfigOptions.include.map((includePath) => {
+		const patternsToExclude: string[] = this.tsConfigOptions.exclude.map((includePath) => {
 			return includePath.split('*.').at(-1)
-		})
+		}) as string[]
 
-		return fileNames.filter((fileName) => {
-			return patterns.find((pattern) => fileName.includes(pattern as string))
-		})
+		for (const entry of filesEntry) {
+			const entryName = path.resolve(entry.parentPath, entry.name)
+
+			if (
+				entry.isFile() &&
+				entryName.includes('node_modules') === false &&
+				patternsToInclude.find((pattern) => pattern && entryName.includes(pattern)) &&
+				!patternsToExclude.find((pattern) => pattern && entryName.includes(pattern))
+			) {
+				files.push({ path: entryName, name: entry.name })
+			}
+		}
+
+		return files
 	}
 
 	/**
@@ -216,6 +234,8 @@ class UnifiedTypesGenerator {
 			this.tsConfigOptions = JSON.parse(
 				fs.readFileSync(this.tsConfigPath, { encoding: 'utf-8' }).toString()
 			)
+
+			if (!Array.isArray(this.tsConfigOptions.exclude)) this.tsConfigOptions.exclude = []
 		} catch (err) {
 			console.error(err)
 		}
@@ -248,10 +268,9 @@ class UnifiedTypesGenerator {
 		let outputContent = ''
 
 		for (const file of files) {
-			const filePath = path.join(this.tsConfigOptions.compilerOptions.rootDir as string, file)
-			console.log(styleText('greenBright', `Generating types for: \n ${filePath} `))
+			console.log(styleText('greenBright', `Generating types for: \n ${file.name} `))
 
-			const data = await this.generateTypeDeclarationFromFile(filePath)
+			const data = await this.generateTypeDeclarationFromFile(file.path)
 
 			if (data) outputContent += data + '\n'
 		}

@@ -14,7 +14,8 @@
 	"scripts": {
 		"build": "tsc && rollup -c",
 		"prepublishOnly": "npm run build",
-		"test": "echo 'Tests are pending'"
+		"test": "echo 'Tests are pending'",
+		"postpublish": "git push origin --tags"
 	},
 	"bin": {
 		"ut-declarator": "dist/ut-declarator.js"

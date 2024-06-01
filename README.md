@@ -31,7 +31,7 @@ Here's how you can use the Unified Type Declarator in your project:
 
 ### Setup Configuration:
 
-Ensure your **`tsconfig.declaration.json`** or a **custom configuration file** specifies the root directory, include paths, and the output file name.
+Ensure your **`tsconfig.declaration.json`** or a **custom configuration file** specifies the root directory, include paths, exclude paths, and the output file name.
 
 ### Generating Types:
 
@@ -72,7 +72,8 @@ After generating the type declarations, include the generated type declaration f
 		"outFile": "types/index.d.ts",
 		"rootDir": "./src"
 	},
-	"include": ["./src/**/*.entity.ts", "./src/**/*.fixtures.ts"]
+	"include": ["./src/**/*.entity.ts", "./src/**/*.fixtures.ts"],
+	"exclude": ["./src/**/*.service.ts"]
 }
 ```
 
