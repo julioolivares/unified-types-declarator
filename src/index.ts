@@ -112,8 +112,9 @@ class UnifiedTypesGenerator {
 		const propertyName = member.name.getText(sourceFile)
 		const propertyType = member.type ? member.type.getText(sourceFile) : 'unknown'
 		const comment = this.getJsDocComment(member)
+		const optional = member.questionToken ? '?' : ''
 
-		return `\n  ${comment}  ${propertyName}: ${propertyType}\n`
+		return `\n  ${comment}  ${propertyName}${optional}: ${propertyType}\n`
 	}
 
 	/**
