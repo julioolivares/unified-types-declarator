@@ -69,7 +69,7 @@ After generating the type declarations, include the generated type declaration f
 ```json
 {
 	"compilerOptions": {
-		"outFile": "types/index.d.ts",
+		"outFile": "dist/index.d.ts",
 		"rootDir": "./src"
 	},
 	"include": ["./src/**/*.entity.ts", "./src/**/*.fixtures.ts"],
