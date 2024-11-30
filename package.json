@@ -1,6 +1,6 @@
 {
 	"name": "unified-types-declarator",
-	"version": "1.4.2",
+	"version": "1.4.4",
 	"private": false,
 	"description": "The Unified Type Declarator is a utility designed for generating global TypeScript type declarations from project files.",
 	"main": "./dist/bundle.cjs.js",
@@ -29,14 +29,20 @@
 		"registry": "https://registry.npmjs.org/"
 	},
 	"keywords": [
-		"autogenerate",
-		"unified",
-		"types",
-		"global",
-		"declarator",
+		"type declarations",
 		"typescript",
-		"tsconfig",
-		"declarations"
+		"type definitions",
+		"unified types",
+		"declarator",
+		"types generator",
+		"javascript",
+		"ts types",
+		"schema generation",
+		"code generation",
+		"static typing",
+		"development",
+		"compiler",
+		"type-checking"
 	],
 	"author": "Julio Tejeda <julioolivarestejeda@gmail.com>",
 	"license": "MIT",

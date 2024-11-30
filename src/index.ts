@@ -109,12 +109,18 @@ class UnifiedTypesGenerator {
 		member: PropertySignature | PropertyDeclaration,
 		sourceFile: SourceFile
 	): string {
+		const isStatic =
+			member.modifiers &&
+			member.modifiers.some((modfier) => modfier.kind === SyntaxKind.StaticKeyword)
+
 		const propertyName = member.name.getText(sourceFile)
 		const propertyType = member.type ? member.type.getText(sourceFile) : 'unknown'
 		const comment = this.getJsDocComment(member)
 		const optional = member.questionToken ? '?' : ''
 
-		return `\n  ${comment}  ${propertyName}${optional}: ${propertyType}\n`
+		return `\n  ${comment} ${
+			isStatic ? 'static' : ''
+		}  ${propertyName}${optional}: ${propertyType}\n`
 	}
 
 	/**
@@ -467,14 +473,17 @@ class UnifiedTypesGenerator {
 		const methodSignature = node.type ? node.type.getText(sourceFile) : 'void'
 		const parameters = this.getParametersSignature(node, sourceFile)
 		const comment = this.getJsDocComment(node)
-
+		const isStatic =
+			node.modifiers && node.modifiers.some((modfier) => modfier.kind === SyntaxKind.StaticKeyword)
 		if (!node.name) return ''
 
 		const methodName = node.name.getText(sourceFile)
 
 		genericTypes = genericTypes ? `<${genericTypes}>` : ''
 
-		declaration = `  ${comment}${methodName}${genericTypes}(${parameters}): ${methodSignature}\n`
+		declaration = `  ${comment} ${
+			isStatic ? 'static' : ''
+		} ${methodName}${genericTypes}(${parameters}): ${methodSignature}\n`
 
 		return declaration
 	}
