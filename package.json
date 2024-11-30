@@ -29,14 +29,20 @@
 		"registry": "https://registry.npmjs.org/"
 	},
 	"keywords": [
-		"autogenerate",
-		"unified",
-		"types",
-		"global",
-		"declarator",
+		"type declarations",
 		"typescript",
-		"tsconfig",
-		"declarations"
+		"type definitions",
+		"unified types",
+		"declarator",
+		"types generator",
+		"javascript",
+		"ts types",
+		"schema generation",
+		"code generation",
+		"static typing",
+		"development",
+		"compiler",
+		"type-checking"
 	],
 	"author": "Julio Tejeda <julioolivarestejeda@gmail.com>",
 	"license": "MIT",
